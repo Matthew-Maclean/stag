@@ -154,7 +154,7 @@ pub fn encode_rgba<R: Rng>(source: &mut RgbaImage, payload: &[u8], mode: RgbaMod
 pub fn decode_rgba(source: &RgbaImage, mode: RgbaMode) -> Vec<u8>
 {
     // pixels per byte
-    let ppb = match mode
+    let ppb: usize = match mode
     {
         // one value per pixel = 8 pixels per byte
         RgbaMode::Alpha => 8,
@@ -162,7 +162,7 @@ pub fn decode_rgba(source: &RgbaImage, mode: RgbaMode) -> Vec<u8>
         RgbaMode::Each => 2,
     };
 
-    let mut buf = Vec::new();
+    let mut buf = Vec::with_capacity(source.width() as usize* source.height() as usize/ ppb);
     
     for pixels in source.pixels()         // iterate pixels
         .chunks(ppb).into_iter()          // split into ppb-sized chunks
@@ -189,7 +189,21 @@ pub fn decode_rgba(source: &RgbaImage, mode: RgbaMode) -> Vec<u8>
             },
             RgbaMode::Each =>
             {
-                unimplemented!()
+                let mut byte = 0u8;
+                
+                for i in 0..8
+                {
+                    let val = if i < 4
+                    {
+                        pixels[0].data[i]
+                    }
+                    else
+                    {
+                        pixels[1].data[i - 4]
+                    };
+
+                    set_bit(byte, i as u8, val % 2 == 1);
+                }
             }
         }
     }
