@@ -6,3 +6,5 @@ authors = ["Matthew M. <myself123@live.com>"]
 [dependencies]
 image = "0.17.0"
 clap = "2.26"
+rand = "0.3.17"
+itertools = "0.7.1"
