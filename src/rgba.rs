@@ -1,4 +1,4 @@
-use image::{RgbaImage, Rgba, Pixels};
+use image::RgbaImage;
 use rand::Rng;
 use itertools::Itertools;
 
@@ -95,7 +95,49 @@ pub fn encode_rgba<R: Rng>(source: &mut RgbaImage, payload: &[u8], mode: RgbaMod
 
 pub fn decode_rbga(source: &RgbaImage, mode: RgbaMode) -> Vec<u8>
 {
-    unimplemented!();
+    // pixels per byte
+    let ppb = match mode
+    {
+        // one value per pixel = 8 pixels per byte
+        RgbaMode::Alpha => 8,
+        // four values per pixel = 2 pixels per byte
+        RgbaMode::Each => 2,
+    };
+
+    let mut buf = Vec::new();
+    
+    for pixels in source.pixels()         // iterate pixels
+        .chunks(ppb).into_iter()          // split into ppb-sized chunks
+        .map(|ch| ch.collect::<Vec<_>>()) // make them vectors so we can check their lengths
+    {
+        // only decode while we have enough data
+        if pixels.len() != ppb
+        {
+            break;
+        }
+
+        match mode
+        {
+            RgbaMode::Alpha =>
+            {
+                let mut byte = 0u8;
+
+                for (i, px) in pixels.into_iter().enumerate()
+                {
+                    byte = set_bit(byte, i as u8, px.data[3] % 2 == 1);
+                }
+
+                buf.push(byte)
+            },
+            RgbaMode::Each =>
+            {
+                unimplemented!()
+            }
+        }
+    }
+
+    buf
+
 }
 
 /// The encoding/decoding mode
