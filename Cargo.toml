@@ -1,0 +1,8 @@
+[package]
+name = "stag"
+version = "0.1.0"
+authors = ["Matthew M. <myself123@live.com>"]
+
+[dependencies]
+image = "0.17.0"
+clap = "2.26"
