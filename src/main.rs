@@ -63,7 +63,7 @@ fn main()
 }
 
 use std::io::{stdin, stdout, Read, Write};
-use std::fs::File;
+use std::error::Error;
 
 use image::{open, DynamicImage};
 use rand::StdRng;
@@ -150,9 +150,9 @@ fn decode(mode: Option<&str>, source: &str)
             match stdout().write(&payload)
             {
                 Ok(_) => {},
-                Err(_) =>
+                Err(e) =>
                 {
-                    eprintln!("Error writing payload");
+                    eprintln!("Error writing payload: {}", e.description());
                     ::std::process::exit(1);
                 }
             };

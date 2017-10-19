@@ -1,7 +1,13 @@
 [package]
 name = "stag"
-version = "0.1.0"
+version = "0.0.1"
 authors = ["Matthew M. <myself123@live.com>"]
+
+description = "Rust Image Steganography"
+readme = "README.md"
+homepage = "https://github.com/Matthew-Maclean/stag"
+keywords = ["image", "steganography"]
+license = "MIT"
 
 [dependencies]
 image = "0.17.0"
