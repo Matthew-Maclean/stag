@@ -5,6 +5,8 @@ extern crate itertools;
 
 use clap::*;
 
+mod codec;
+
 mod rgba;
 
 mod utils;
