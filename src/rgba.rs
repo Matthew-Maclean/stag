@@ -93,7 +93,7 @@ pub fn encode_rgba<R: Rng>(source: &mut RgbaImage, payload: &[u8], mode: RgbaMod
     }
 }
 
-pub fn decode_rbga(source: &RgbaImage, mode: RgbaMode) -> Vec<u8>
+pub fn decode_rgba(source: &RgbaImage, mode: RgbaMode) -> Vec<u8>
 {
     // pixels per byte
     let ppb = match mode
@@ -157,5 +157,40 @@ impl Default for RgbaMode
     fn default() -> RgbaMode
     {
         RgbaMode::Alpha
+    }
+}
+
+#[cfg(test)]
+mod test
+{
+    use image::{ImageBuffer, Rgba};
+    use rand::StdRng;
+
+    use super::*;
+
+    #[test]
+    fn alpha()
+    {
+        let mut image = ImageBuffer::from_pixel(
+            25,
+            8,
+            Rgba
+            {
+                data: [127u8; 4],
+            });
+
+        let payload = vec![
+            1,2, 3, 4, 5, 6, 7, 8, 9, 10,
+            11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+            21, 22, 23, 24, 25
+        ];
+
+        let rng = StdRng::new().unwrap();
+
+        encode_rgba(&mut image, &payload, RgbaMode::Alpha, rng);
+
+        let dec = decode_rgba(&image, RgbaMode::Alpha);
+
+        assert_eq!(payload, dec);
     }
 }
