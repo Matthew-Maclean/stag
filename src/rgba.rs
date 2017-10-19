@@ -202,8 +202,10 @@ pub fn decode_rgba(source: &RgbaImage, mode: RgbaMode) -> Vec<u8>
                         pixels[1].data[i - 4]
                     };
 
-                    set_bit(byte, i as u8, val % 2 == 1);
+                    byte = set_bit(byte, i as u8, val % 2 == 1);
                 }
+
+                buf.push(byte);
             }
         }
     }
@@ -262,6 +264,32 @@ mod test
         encode_rgba(&mut image, &payload, RgbaMode::Alpha, rng);
 
         let dec = decode_rgba(&image, RgbaMode::Alpha);
+
+        assert_eq!(payload, dec);
+    }
+
+    #[test]
+    fn each()
+    {
+        let mut image = ImageBuffer::from_pixel(
+            25,
+            2,
+            Rgba
+            {
+                data: [127u8; 4],
+            });
+
+        let payload = vec![
+            1,2, 3, 4, 5, 6, 7, 8, 9, 10,
+            11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+            21, 22, 23, 24, 25
+        ];
+
+        let rng = StdRng::new().unwrap();
+
+        encode_rgba(&mut image, &payload, RgbaMode::Each, rng);
+
+        let dec = decode_rgba(&image, RgbaMode::Each);
 
         assert_eq!(payload, dec);
     }
