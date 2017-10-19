@@ -12,7 +12,7 @@ pub fn encode_rgba<R: Rng>(source: &mut RgbaImage, payload: &[u8], mode: RgbaMod
         // 1 values per pixel = 8 pixels per byte
         RgbaMode::Alpha => 8,
         // 4 values per pixel = 2 pixels per byte
-        RgbaMode::Each => 2,
+        RgbaMode::All => 2,
     };
     
     for (mut pixels, byte) in source.pixels_mut() // iterate pixels mutably
@@ -85,7 +85,7 @@ pub fn encode_rgba<R: Rng>(source: &mut RgbaImage, payload: &[u8], mode: RgbaMod
                     }
                 }
             },
-            RgbaMode::Each =>
+            RgbaMode::All =>
             {
                 for i in 0..8
                 {
@@ -159,7 +159,7 @@ pub fn decode_rgba(source: &RgbaImage, mode: RgbaMode) -> Vec<u8>
         // one value per pixel = 8 pixels per byte
         RgbaMode::Alpha => 8,
         // four values per pixel = 2 pixels per byte
-        RgbaMode::Each => 2,
+        RgbaMode::All => 2,
     };
 
     let mut buf = Vec::with_capacity(source.width() as usize* source.height() as usize/ ppb);
@@ -187,7 +187,7 @@ pub fn decode_rgba(source: &RgbaImage, mode: RgbaMode) -> Vec<u8>
 
                 buf.push(byte)
             },
-            RgbaMode::Each =>
+            RgbaMode::All =>
             {
                 let mut byte = 0u8;
                 
@@ -220,8 +220,8 @@ pub enum RgbaMode
 {
     /// encode in alpha even/odd
     Alpha,
-    /// encode in each field even/odd
-    Each,
+    /// encode in all field even/odd
+    All,
 }
 
 use std::default::Default;
@@ -269,7 +269,7 @@ mod test
     }
 
     #[test]
-    fn each()
+    fn all()
     {
         let mut image = ImageBuffer::from_pixel(
             25,
@@ -287,9 +287,9 @@ mod test
 
         let rng = StdRng::new().unwrap();
 
-        encode_rgba(&mut image, &payload, RgbaMode::Each, rng);
+        encode_rgba(&mut image, &payload, RgbaMode::All, rng);
 
-        let dec = decode_rgba(&image, RgbaMode::Each);
+        let dec = decode_rgba(&image, RgbaMode::All);
 
         assert_eq!(payload, dec);
     }
