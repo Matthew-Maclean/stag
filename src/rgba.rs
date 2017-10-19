@@ -15,7 +15,7 @@ pub fn encode_rgba<R: Rng>(source: &mut RgbaImage, payload: &[u8], mode: RgbaMod
         RgbaMode::Each => 2,
     };
     
-    for (pixels, byte) in source.pixels_mut() // iterate pixels mutably
+    for (mut pixels, byte) in source.pixels_mut() // iterate pixels mutably
         .chunks(ppb).into_iter()              // split them into ppb-size chunks
         .map(|ch| ch.collect::<Vec<_>>())     // make them vectors so we can check their lengths later
         .zip(payload.iter().map(|x| *x))      // give each chunk a byte
@@ -87,7 +87,65 @@ pub fn encode_rgba<R: Rng>(source: &mut RgbaImage, payload: &[u8], mode: RgbaMod
             },
             RgbaMode::Each =>
             {
-                unimplemented!()
+                for i in 0..8
+                {
+                    let val = if i < 4
+                    {
+                        &mut pixels[0].data[i]
+                    }
+                    else
+                    {
+                        &mut pixels[1].data[i - 4]
+                    };
+
+                    if get_bit(byte, i as u8)
+                    {
+                        // even = 0 bit, so it needs to be changed
+                        if *val % 2 == 0
+                        {
+                            // special case: if it's zero, we have to go up
+                            if *val == 0
+                            {
+                                *val = 1;
+                            }
+                            else
+                            {
+                                if rng.gen()
+                                {
+                                    *val += 1;
+                                }
+                                else
+                                {
+                                    *val -= 1;
+                                }
+                            }
+                        }
+                    }
+                    // a false, or 0 bit
+                    else
+                    {
+                        // odd = 1 bit, so it needs to be changed
+                        if *val % 2 == 1
+                        {
+                            // special case: if it's 255, we have to go down
+                            if *val == 255
+                            {
+                                *val = 254;
+                            }
+                            else
+                            {
+                                if rng.gen()
+                                {
+                                    *val += 1;
+                                }
+                                else
+                                {
+                                    *val -= 1;
+                                }
+                            }
+                        }
+                    }
+                }
             },
         }
     }
