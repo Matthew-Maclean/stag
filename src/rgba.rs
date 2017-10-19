@@ -173,7 +173,7 @@ impl Codec for RgbaCodec
         len: usize,
         mode: RgbaMode)
     {
-        assert!(len > buffer.len());
+        assert!(len >= buffer.len());
 
         // pixels per byte
         let ppb: usize = match mode
@@ -495,7 +495,8 @@ mod test
 {
     use image::{ImageBuffer, Rgba};
     use rand::StdRng;
-
+    
+    use codec::Codec;
     use super::*;
 
     #[test]
@@ -515,13 +516,15 @@ mod test
             21, 22, 23, 24, 25
         ];
 
+        let mut buf = vec![0; 25];
+
         let rng = StdRng::new().unwrap();
 
-        encode_rgba(&mut image, &payload, RgbaMode::Alpha, rng);
+        RgbaCodec::encode(&mut image, &payload, RgbaMode::Alpha, rng);
 
-        let dec = decode_rgba(&image, RgbaMode::Alpha);
+        RgbaCodec::decode(&image, &mut buf, 25, RgbaMode::Alpha);
 
-        assert_eq!(payload, dec);
+        assert_eq!(payload, buf);
     }
 
     #[test]
@@ -541,12 +544,14 @@ mod test
             21, 22, 23, 24, 25
         ];
 
+        let mut buf = vec![0; 25];
+
         let rng = StdRng::new().unwrap();
 
-        encode_rgba(&mut image, &payload, RgbaMode::All, rng);
+        RgbaCodec::encode(&mut image, &payload, RgbaMode::All, rng);
 
-        let dec = decode_rgba(&image, RgbaMode::All);
+        RgbaCodec::decode(&image, &mut buf, 25, RgbaMode::All);
 
-        assert_eq!(payload, dec);
+        assert_eq!(payload, buf);
     }
 }
