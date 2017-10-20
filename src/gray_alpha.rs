@@ -174,3 +174,69 @@ impl FromStr for GrayAlphaMode
         }
     }
 }
+
+#[cfg(test)]
+mod test
+{
+    use image::{ImageBuffer, LumaA};
+    use rand::StdRng;
+    
+    use codec::Codec;
+    use super::*;
+
+    #[test]
+    fn alpha()
+    {
+       let mut image = ImageBuffer::from_pixel(
+            30,
+            8,
+            LumaA
+            {
+                data: [127u8; 2],
+            });
+
+        let payload = vec![
+            1,2, 3, 4, 5, 6, 7, 8, 9, 10,
+            11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+            21, 22, 23, 24, 25
+        ];
+
+        let mut buf = vec![0; 25];
+
+        let rng = StdRng::new().unwrap();
+
+        GrayAlphaCodec::encode(&mut image, &payload, GrayAlphaMode::Alpha, rng);
+
+        GrayAlphaCodec::decode(&image, &mut buf, 25, GrayAlphaMode::Alpha);
+
+        assert_eq!(payload, buf);
+    }
+
+    #[test]
+    fn all()
+    {
+       let mut image = ImageBuffer::from_pixel(
+            30,
+            8,
+            LumaA
+            {
+                data: [127u8; 2],
+            });
+
+        let payload = vec![
+            1,2, 3, 4, 5, 6, 7, 8, 9, 10,
+            11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+            21, 22, 23, 24, 25
+        ];
+
+        let mut buf = vec![0; 25];
+
+        let rng = StdRng::new().unwrap();
+
+        GrayAlphaCodec::encode(&mut image, &payload, GrayAlphaMode::All, rng);
+
+        GrayAlphaCodec::decode(&image, &mut buf, 25, GrayAlphaMode::All);
+
+        assert_eq!(payload, buf);
+    }
+}
