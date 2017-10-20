@@ -173,7 +173,7 @@ impl Codec for RgbaCodec
         len: usize,
         mode: RgbaMode)
     {
-        assert!(len >= buffer.len());
+        assert!(len <= buffer.len());
 
         // pixels per byte
         let ppb: usize = match mode
