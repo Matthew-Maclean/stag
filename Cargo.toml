@@ -1,6 +1,6 @@
 [package]
 name = "stag"
-version = "0.0.1"
+version = "0.1.1"
 authors = ["Matthew M. <myself123@live.com>"]
 
 description = "Rust Image Steganography"
