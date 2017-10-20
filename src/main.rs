@@ -49,6 +49,18 @@ fn main()
                  .long("length")
                  .help("the amount of bytes to decode")
                  .required(true)))
+        .subcommand(SubCommand::with_name("estimate")
+                .about("estimate how many bytes will fit into a file")
+                .arg(Arg::with_name("SOURCE")
+                     .help("The image source")
+                     .index(1)
+                     .takes_value(true))
+                .arg(Arg::with_name("mode")
+                     .short("m")
+                     .long("mode")
+                     .value_name("MODE")
+                     .help("The encoding mode, default depends on SOURCE type")
+                     .takes_value(true)))
         .get_matches();
 
     if let Some(matches) = matches.subcommand_matches("encode")
@@ -66,6 +78,14 @@ fn main()
             matches.value_of("mode"),
             matches.value_of("SOURCE").unwrap(),
             matches.value_of("length").unwrap()
+        );
+    }
+
+    if let Some(matches) = matches.subcommand_matches("estimate")
+    {
+        dispatch_estimate(
+            matches.value_of("mode"),
+            matches.value_of("SOURCE").unwrap()
         );
     }
 }
@@ -125,6 +145,24 @@ fn dispatch_decode(mode: Option<&str>, source: &str, len: &str)
     }
 }
 
+fn dispatch_estimate(mode: Option<&str>, source: &str)
+{
+    let dyimage = match open(source)
+    {
+        Ok(di) => di,
+        Err(_) => error_out("Error opening source image for estimating"),
+    };
+
+    match dyimage
+    {
+        DynamicImage::ImageRgba8(image) =>
+        {
+            estimate::<RgbaCodec>(image, mode);
+        },
+        _ => error_out("Unsupported filetype"),
+    }
+}
+
 fn encode<C: Codec>(mut image: C::Input, mode: Option<&str>) -> C::Input
 {
     let mode = if let Some(mode) = mode
@@ -178,6 +216,28 @@ fn decode<C: Codec>(image: C::Input, mode: Option<&str>, len: usize)
         Ok(_) => {},
         Err(_) => error_out("Error writing decoded payload"),
     };
+}
+
+fn estimate<C: Codec>(image: C::Input, mode: Option<&str>)
+{
+    let mode = if let Some(mode) = mode
+    {
+        match C::Mode::from_str(mode)
+        {
+            Ok(mode) => mode,
+            Err(_) => error_out("Error parsing mode string"),
+        }
+    }
+    else
+    {
+        C::Mode::default()
+    };
+
+    match C::estimate(&image, mode)
+    {
+        Some(i) => println!("Estimate {} bytes", i),
+        None => println!("Could not make an estimate"),
+    }
 }
 
 fn error_out(msg: &str) -> !
