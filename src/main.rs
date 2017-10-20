@@ -9,6 +9,7 @@ mod codec;
 
 mod rgba;
 mod rgb;
+mod gray_alpha;
 
 mod utils;
 
