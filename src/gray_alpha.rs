@@ -67,7 +67,58 @@ impl Codec for GrayAlphaCodec
         len: usize,
         mode: GrayAlphaMode)
     {
-        unimplemented!()
+        assert!(len <= payload.len());
+
+        // pixels per bytes
+        let ppb = match mode
+        {
+            GrayAlphaMode::Alpha => 8,
+            GrayAlphaMode::All => 4,
+        };
+
+        for (index, pixels) in source.pixels()
+            .chunks(ppb).into_iter()
+            .map(|ch| ch.collect::<Vec<_>>())
+            .enumerate()
+            .take(len)
+        {
+            if pixels.len() != ppb
+            {
+                return;
+            }
+
+            match mode
+            {
+                GrayAlphaMode::Alpha =>
+                {
+                    let mut byte = 0u8;
+
+                    for (i, px) in pixels.into_iter()
+                        .enumerate()
+                    {
+                        byte = set_bit(byte,
+                            i as u8, px.data[1] % 2 == 1);
+                    }
+
+                    payload[index] = byte;
+                },
+                GrayAlphaMode::All =>
+                {
+                    let mut byte = 0u8;
+
+                    for (i, px) in pixels.into_iter()
+                        .enumerate()
+                    {
+                        byte = set_bit(byte,
+                            i as u8 * 2, px.data[0] % 2 == 1);
+                        byte = set_bit(byte,
+                            i as u8* 2 + 1, px.data[1] % 2 == 1);
+                    }
+
+                    payload[index] = byte;
+                },
+            }
+        }
     }
 
     fn estimate(
