@@ -77,7 +77,7 @@ use image::{open, DynamicImage};
 use rand::StdRng;
 
 use codec::Codec;
-use rgba::{RgbaCodec, RgbaMode};
+use rgba::RgbaCodec;
 
 fn dispatch_encode(mode: Option<&str>, source: &str, output: &str)
 {
@@ -154,7 +154,7 @@ fn encode<C: Codec>(mut image: C::Input, mode: Option<&str>) -> C::Input
     image
 }
 
-fn decode<C: Codec>(mut image: C::Input, mode: Option<&str>, len: usize)
+fn decode<C: Codec>(image: C::Input, mode: Option<&str>, len: usize)
 {
     let mode = if let Some(mode) = mode
     {
