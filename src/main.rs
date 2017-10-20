@@ -43,6 +43,11 @@ fn main()
             .arg(Arg::with_name("SOURCE")
                  .help("The image source")
                  .index(1)
+                 .required(true))
+            .arg(Arg::with_name("length")
+                 .short("l")
+                 .long("length")
+                 .help("the amount of bytes to decode")
                  .required(true)))
         .get_matches();
 
@@ -59,106 +64,115 @@ fn main()
     {
         decode(
             matches.value_of("mode"),
-            matches.value_of("SOURCE").unwrap()
+            matches.value_of("SOURCE").unwrap(),
+            matches.value_of("length").unwrap()
         );
     }
 }
 
 use std::io::{stdin, stdout, Read, Write};
 use std::error::Error;
+use std::str::FromStr;
 
 use image::{open, DynamicImage};
 use rand::StdRng;
 
-use rgba::{encode_rgba, decode_rgba, RgbaMode};
+use codec::Codec;
+use rgba::{RgbaCodec, RgbaMode};
 
 fn encode(mode: Option<&str>, source: &str, output: &str)
 {
     let dyimage = match open(source)
     {
         Ok(di) => di,
-        Err(_) =>
-        {
-            eprintln!("Error opening source image");
-            ::std::process::exit(1);
-        },
+        Err(_) => error_out("Error opening source image for encoding"),
     };
 
     match dyimage
     {
         DynamicImage::ImageRgba8(mut image) =>
         {
-            let mode = match mode
+            let mode = if let Some(mode) = mode
             {
-                Some("alpha") => RgbaMode::Alpha,
-                Some("all") => RgbaMode::All,
-                Some(_) | None => RgbaMode::Alpha,
+                match RgbaMode::from_str(mode)
+                {
+                    Ok(mode) => mode,
+                    Err(_) => error_out("Error parsing mode string"),
+                }
+            }
+            else
+            {
+                RgbaMode::default()
             };
 
             let rng = match StdRng::new()
             {
                 Ok(r) => r,
-                Err(_) =>
-                {
-                    eprintln!("Error creating an RNG");
-                    std::process::exit(1);
-                }
+                Err(_) => error_out("Error creating source of randomness"),
             };
 
             let mut payload = String::new();
             stdin().read_to_string(&mut payload).unwrap();
 
-            encode_rgba(&mut image, &payload.bytes().collect::<Vec<_>>(), mode, rng);
+            RgbaCodec::encode(&mut image, payload.as_bytes(), mode, rng);
 
             match image.save(output)
             {
                 Ok(_) => {},
-                Err(_) =>
-                {
-                    eprintln!("Error saving output file");
-                    ::std::process::exit(1);
-                }
+                Err(_) => error_out("Error saving output encoded file"),
             };
         },
         _ => unimplemented!()
     }
 }
 
-fn decode(mode: Option<&str>, source: &str)
+fn decode(mode: Option<&str>, source: &str, len: &str)
 {
+    let len = match len.parse::<usize>()
+    {
+        Ok(l) => l,
+        Err(_) => error_out("len argument to decode is not a number"),
+    };
+
     let dyimage = match open(source)
     {
         Ok(di) => di,
-        Err(_) =>
-        {
-            eprintln!("Error opening source image");
-            ::std::process::exit(1);
-        },
+        Err(_) => error_out("Error opening source image for decoding"),
     };
 
     match dyimage
     {
         DynamicImage::ImageRgba8(image) =>
         {
-            let mode = match mode
+            let mode = if let Some(mode) = mode
             {
-                Some("alpha") => RgbaMode::Alpha,
-                Some("all") => RgbaMode::All,
-                Some(_) | None => RgbaMode::Alpha,
+                match RgbaMode::from_str(mode)
+                {
+                    Ok(mode) => mode,
+                    Err(_) => error_out("Error parsing mode string"),
+                }
+            }
+            else
+            {
+                RgbaMode::default()
             };
 
-            let payload = decode_rgba(&image, mode);
+            let mut buf = vec![0; len];
 
-            match stdout().write(&payload)
+            RgbaCodec::decode(&image, &mut buf, len, mode);
+
+            match stdout().write(&buf)
             {
                 Ok(_) => {},
-                Err(e) =>
-                {
-                    eprintln!("Error writing payload: {}", e.description());
-                    ::std::process::exit(1);
-                }
+                Err(e) => error_out("Error writing decoded payload"),
             };
         },
         _ => unimplemented!()
     }
+}
+
+fn error_out(msg: &str) -> !
+{
+    eprintln!("{}", msg);
+    ::std::process::exit(1)
 }
