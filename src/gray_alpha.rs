@@ -16,9 +16,49 @@ impl Codec for GrayAlphaCodec
         source: &mut GrayAlphaImage,
         payload: &[u8],
         mode: GrayAlphaMode,
-        rng: R)
+        mut rng: R)
     {
-        unimplemented!()
+        // pixels per bytes
+        let ppb = match mode
+        {
+            GrayAlphaMode::Alpha => 8,
+            GrayAlphaMode::All => 4,
+        };
+
+        for (pixels, byte) in source.pixels_mut()
+            .chunks(ppb).into_iter()
+            .map(|ch| ch.collect::<Vec<_>>())
+            .zip(payload.iter().map(|x| *x))
+        {
+            if pixels.len() != ppb
+            {
+                return;
+            }
+
+            match mode
+            {
+                GrayAlphaMode::Alpha =>
+                {
+                    for (i, px) in pixels.into_iter()
+                        .enumerate()
+                    {
+                        fix_u8(&mut px.data[1],
+                               get_bit(byte, i as u8), &mut rng);
+                    }
+                },
+                GrayAlphaMode::All =>
+                {
+                    for (i, px) in pixels.into_iter()
+                        .enumerate()
+                    {
+                        fix_u8(&mut px.data[0],
+                               get_bit(byte, i as u8 * 2), &mut rng);
+                        fix_u8(&mut px.data[1],
+                               get_bit(byte, i as u8 * 2 + 1), &mut rng);
+                    }
+                },
+            }
+        }
     }
 
     fn decode(
