@@ -8,6 +8,7 @@ use clap::*;
 mod codec;
 
 mod rgba;
+mod rgb;
 
 mod utils;
 
