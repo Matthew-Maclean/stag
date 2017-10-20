@@ -53,7 +53,7 @@ fn main()
 
     if let Some(matches) = matches.subcommand_matches("encode")
     {
-        encode(
+        dispatch_encode(
             matches.value_of("mode"),
             matches.value_of("SOURCE").unwrap(),
             matches.value_of("OUTPUT").unwrap()
@@ -62,7 +62,7 @@ fn main()
     
     if let Some(matches) = matches.subcommand_matches("decode")
     {
-        decode(
+        dispatch_decode(
             matches.value_of("mode"),
             matches.value_of("SOURCE").unwrap(),
             matches.value_of("length").unwrap()
@@ -71,7 +71,6 @@ fn main()
 }
 
 use std::io::{stdin, stdout, Read, Write};
-use std::error::Error;
 use std::str::FromStr;
 
 use image::{open, DynamicImage};
@@ -80,53 +79,29 @@ use rand::StdRng;
 use codec::Codec;
 use rgba::{RgbaCodec, RgbaMode};
 
-fn encode(mode: Option<&str>, source: &str, output: &str)
+fn dispatch_encode(mode: Option<&str>, source: &str, output: &str)
 {
     let dyimage = match open(source)
     {
         Ok(di) => di,
-        Err(_) => error_out("Error opening source image for encoding"),
+        Err(_) => error_out("Error opening source image for encoding")
     };
 
     match dyimage
     {
-        DynamicImage::ImageRgba8(mut image) =>
+        DynamicImage::ImageRgba8(image) =>
         {
-            let mode = if let Some(mode) = mode
-            {
-                match RgbaMode::from_str(mode)
-                {
-                    Ok(mode) => mode,
-                    Err(_) => error_out("Error parsing mode string"),
-                }
-            }
-            else
-            {
-                RgbaMode::default()
-            };
-
-            let rng = match StdRng::new()
-            {
-                Ok(r) => r,
-                Err(_) => error_out("Error creating source of randomness"),
-            };
-
-            let mut payload = String::new();
-            stdin().read_to_string(&mut payload).unwrap();
-
-            RgbaCodec::encode(&mut image, payload.as_bytes(), mode, rng);
-
-            match image.save(output)
+            match encode::<RgbaCodec>(image, mode).save(output)
             {
                 Ok(_) => {},
-                Err(_) => error_out("Error saving output encoded file"),
+                Err(_) => error_out("Error saving encoded output file"),
             };
         },
-        _ => unimplemented!()
+        _ => error_out("Unsupported filetype"),
     }
 }
 
-fn decode(mode: Option<&str>, source: &str, len: &str)
+fn dispatch_decode(mode: Option<&str>, source: &str, len: &str)
 {
     let len = match len.parse::<usize>()
     {
@@ -144,31 +119,65 @@ fn decode(mode: Option<&str>, source: &str, len: &str)
     {
         DynamicImage::ImageRgba8(image) =>
         {
-            let mode = if let Some(mode) = mode
-            {
-                match RgbaMode::from_str(mode)
-                {
-                    Ok(mode) => mode,
-                    Err(_) => error_out("Error parsing mode string"),
-                }
-            }
-            else
-            {
-                RgbaMode::default()
-            };
-
-            let mut buf = vec![0; len];
-
-            RgbaCodec::decode(&image, &mut buf, len, mode);
-
-            match stdout().write(&buf)
-            {
-                Ok(_) => {},
-                Err(e) => error_out("Error writing decoded payload"),
-            };
+            decode::<RgbaCodec>(image, mode, len);
         },
-        _ => unimplemented!()
+        _ => error_out("Unsupported filetype"),
     }
+}
+
+fn encode<C: Codec>(mut image: C::Input, mode: Option<&str>) -> C::Input
+{
+    let mode = if let Some(mode) = mode
+    {
+        match C::Mode::from_str(mode)
+        {
+            Ok(mode) => mode,
+            Err(_) => error_out("Error parsing mode string"),
+        }
+    }
+    else
+    {
+        C::Mode::default()
+    };
+
+    let rng = match StdRng::new()
+    {
+        Ok(r) => r,
+        Err(_) => error_out("Error creating source of randomness"),
+    };
+
+    let mut payload = String::new();
+    stdin().read_to_string(&mut payload).unwrap();
+
+    C::encode(&mut image, payload.as_bytes(), mode, rng);
+
+    image
+}
+
+fn decode<C: Codec>(mut image: C::Input, mode: Option<&str>, len: usize)
+{
+    let mode = if let Some(mode) = mode
+    {
+        match C::Mode::from_str(mode)
+        {
+            Ok(mode) => mode,
+            Err(_) => error_out("Error parsing mode string"),
+        }
+    }
+    else
+    {
+        C::Mode::default()
+    };
+
+    let mut buf = vec![0; len];
+
+    C::decode(&image, &mut buf, len, mode);
+
+    match stdout().write(&buf)
+    {
+        Ok(_) => {},
+        Err(_) => error_out("Error writing decoded payload"),
+    };
 }
 
 fn error_out(msg: &str) -> !
