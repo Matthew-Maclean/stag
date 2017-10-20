@@ -235,6 +235,19 @@ impl Codec for RgbaCodec
             }
         }
     }
+
+    fn estimate(
+        source: &RgbaImage,
+        mode: RgbaMode) -> Option<usize>
+    {
+        Some(match mode
+        {
+            RgbaMode::Alpha =>
+                source.width() as usize * source.height() as usize / 8,
+            RgbaMode::All =>
+                source.width() as usize * source.height() as usize / 2,
+        })
+    }
 }
 
 /// The encoding/decoding mode

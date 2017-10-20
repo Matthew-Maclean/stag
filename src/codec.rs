@@ -25,8 +25,8 @@ pub trait Codec
     
     /// Estimate how many bytes can be encoded into an image
     fn estimate(
-        source: &Self::Input,
-        mode: Self::Mode) -> Option<usize>
+        _source: &Self::Input,
+        _mode: Self::Mode) -> Option<usize>
     {
         None
     }
