@@ -103,6 +103,7 @@ use rand::StdRng;
 use codec::Codec;
 use rgba::RgbaCodec;
 use rgb::RgbCodec;
+use gray_alpha::GrayAlphaCodec;
 
 fn dispatch_encode(mode: Option<&str>, source: &str, output: &str)
 {
@@ -125,6 +126,14 @@ fn dispatch_encode(mode: Option<&str>, source: &str, output: &str)
         DynamicImage::ImageRgb8(image) =>
         {
             match encode::<RgbCodec>(image, mode).save(output)
+            {
+                Ok(_) => {},
+                Err(_) => error_out("Error saving encoded output file"),
+            };
+        },
+        DynamicImage::ImageLumaA8(image) =>
+        {
+            match encode::<GrayAlphaCodec>(image, mode).save(output)
             {
                 Ok(_) => {},
                 Err(_) => error_out("Error saving encoded output file"),
@@ -158,6 +167,10 @@ fn dispatch_decode(mode: Option<&str>, source: &str, len: &str)
         {
             decode::<RgbCodec>(image, mode, len);
         },
+        DynamicImage::ImageLumaA8(image) =>
+        {
+            decode::<GrayAlphaCodec>(image, mode, len);
+        },
         _ => error_out("Unsupported filetype"),
     }
 }
@@ -179,6 +192,10 @@ fn dispatch_estimate(mode: Option<&str>, source: &str)
         DynamicImage::ImageRgb8(image) =>
         {
             estimate::<RgbCodec>(image, mode);
+        },
+        DynamicImage::ImageLumaA8(image) =>
+        {
+            estimate::<GrayAlphaCodec>(image, mode);
         },
         _ => error_out("Unsupported filetype"),
     }
